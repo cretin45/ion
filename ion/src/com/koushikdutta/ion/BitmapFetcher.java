@@ -26,6 +26,7 @@ class BitmapFetcher implements IonRequestBuilder.LoadRequestCallback {
     int resizeHeight;
     boolean animateGif;
     boolean deepZoom;
+    boolean noTransformCache;
 
     private boolean fastLoad(String uri) {
         Ion ion = builder.ion;
@@ -95,7 +96,7 @@ class BitmapFetcher implements IonRequestBuilder.LoadRequestCallback {
         // make sure that the parent download isn't cancelled (empty list)
         // and also make sure there are waiters for this transformed bitmap
         if (ion.bitmapsPending.tag(bitmapKey) == null) {
-            ion.bitmapsPending.add(downloadKey, new TransformBitmap(ion, bitmapKey, downloadKey, transforms));
+            ion.bitmapsPending.add(downloadKey, new TransformBitmap(ion, bitmapKey, downloadKey, transforms, noTransformCache));
         }
     }
 
@@ -111,7 +112,7 @@ class BitmapFetcher implements IonRequestBuilder.LoadRequestCallback {
         // subsequent retransformation. See if we can retrieve the bitmap from the disk cache.
         // See TransformBitmap for where the cache is populated.
         FileCache fileCache = ion.responseCache.getFileCache();
-        if (!builder.noCache && hasTransforms && fileCache.exists(bitmapKey) && !deepZoom) {
+        if (!builder.noCache && !noTransformCache && hasTransforms && fileCache.exists(bitmapKey) && !deepZoom) {
             TransformBitmap.getBitmapSnapshot(ion, bitmapKey);
             return;
         }

@@ -53,10 +53,12 @@ class TransformBitmap extends BitmapCallback implements FutureCallback<BitmapInf
     }
 
     String downloadKey;
-    public TransformBitmap(Ion ion, String transformKey, String downloadKey, ArrayList<Transform> transforms) {
+    boolean noTransformCache;
+    public TransformBitmap(Ion ion, String transformKey, String downloadKey, ArrayList<Transform> transforms, boolean noTransformCache) {
         super(ion, transformKey, true);
         this.transforms = transforms;
         this.downloadKey = downloadKey;
+        this.noTransformCache = noTransformCache;
     }
 
     @Override
@@ -110,7 +112,7 @@ class TransformBitmap extends BitmapCallback implements FutureCallback<BitmapInf
                 // the transformed bitmap was successfully load it, let's toss it into
                 // the disk lru cache.
                 // but don't persist gifs...
-                if (info.bitmaps.length > 1)
+                if (info.bitmaps.length > 1 || noTransformCache)
                     return;
                 FileCache cache = ion.responseCache.getFileCache();
                 if (cache == null)

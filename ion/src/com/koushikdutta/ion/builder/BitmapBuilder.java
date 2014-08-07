@@ -43,4 +43,10 @@ public interface BitmapBuilder<B extends BitmapBuilder<?>> {
      * @return
      */
     public B smartSize(boolean smartSize);
+
+    /**
+     * Disable usage of the transform cache for this request
+     * @return
+     */
+    public B noTransformCache();
 }
