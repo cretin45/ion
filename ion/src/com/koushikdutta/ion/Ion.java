@@ -27,23 +27,30 @@ import com.koushikdutta.ion.bitmap.IonBitmapCache;
 import com.koushikdutta.ion.builder.Builders;
 import com.koushikdutta.ion.builder.FutureBuilder;
 import com.koushikdutta.ion.builder.LoadBuilder;
+import com.koushikdutta.ion.conscrypt.ConscryptMiddleware;
 import com.koushikdutta.ion.cookie.CookieMiddleware;
+import com.koushikdutta.ion.loader.AssetLoader;
 import com.koushikdutta.ion.loader.AsyncHttpRequestFactory;
 import com.koushikdutta.ion.loader.ContentLoader;
 import com.koushikdutta.ion.loader.FileLoader;
 import com.koushikdutta.ion.loader.HttpLoader;
 import com.koushikdutta.ion.loader.PackageIconLoader;
+import com.koushikdutta.ion.loader.ResourceLoader;
 import com.koushikdutta.ion.loader.VideoLoader;
+
+import org.apache.http.conn.ssl.BrowserCompatHostnameVerifier;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.WeakHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import javax.net.ssl.SSLContext;
 
 /**
  * Created by koush on 5/21/13.
@@ -141,17 +148,20 @@ public class Ion {
     }
 
     AsyncHttpClient httpClient;
+    ConscryptMiddleware conscryptMiddleware;
     CookieMiddleware cookieMiddleware;
     ResponseCacheMiddleware responseCache;
     FileCache storeCache;
     HttpLoader httpLoader;
     ContentLoader contentLoader;
+    ResourceLoader resourceLoader;
+    AssetLoader assetLoader;
     VideoLoader videoLoader;
     PackageIconLoader packageIconLoader;
     FileLoader fileLoader;
     String logtag;
     int logLevel;
-    Gson gson = new Gson();
+    Gson gson;
     String userAgent;
     ArrayList<Loader> loaders = new ArrayList<Loader>();
     String name;
@@ -159,12 +169,15 @@ public class Ion {
     Config config = new Config();
     IonBitmapCache bitmapCache;
     Context context;
-    IonBitmapRequestBuilder bitmapBuilder = new IonBitmapRequestBuilder(this);
+    IonImageViewRequestBuilder bitmapBuilder = new IonImageViewRequestBuilder(this);
 
     private Ion(Context context, String name) {
-        httpClient = new AsyncHttpClient(new AsyncServer("ion-" + name));
         this.context = context = context.getApplicationContext();
         this.name = name;
+
+        httpClient = new AsyncHttpClient(new AsyncServer("ion-" + name));
+        httpClient.getSSLSocketMiddleware().setHostnameVerifier(new BrowserCompatHostnameVerifier());
+        httpClient.insertMiddleware(conscryptMiddleware = new ConscryptMiddleware(context, httpClient.getSSLSocketMiddleware()));
 
         File ionCacheDir = new File(context.getCacheDir(), name);
         try {
@@ -197,6 +210,8 @@ public class Ion {
                 .addLoader(packageIconLoader = new PackageIconLoader())
                 .addLoader(httpLoader = new HttpLoader())
                 .addLoader(contentLoader = new ContentLoader())
+                .addLoader(resourceLoader = new ResourceLoader())
+                .addLoader(assetLoader = new AssetLoader())
                 .addLoader(fileLoader = new FileLoader());
     }
 
@@ -451,6 +466,10 @@ public class Ion {
         return cookieMiddleware;
     }
 
+    public ConscryptMiddleware getConscryptMiddleware() {
+        return conscryptMiddleware;
+    }
+
     /**
      * Get the AsyncHttpClient object in use by this Ion instance
      * @return
@@ -492,13 +511,20 @@ public class Ion {
             return responseCache;
         }
 
+        public SSLContext createSSLContext(String algorithm) throws NoSuchAlgorithmException {
+            conscryptMiddleware.initialize();
+            return SSLContext.getInstance(algorithm);
+        }
+
         /**
          * Get the Gson object in use by this Ion instance.
          * This can be used to customize serialization and deserialization
          * from java objects.
          * @return
          */
-        public Gson getGson() {
+        public synchronized Gson getGson() {
+            if (gson == null)
+                gson = new Gson();
             return gson;
         }
 

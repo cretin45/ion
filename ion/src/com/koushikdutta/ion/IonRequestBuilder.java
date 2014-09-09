@@ -50,12 +50,15 @@ import com.koushikdutta.async.stream.FileDataSink;
 import com.koushikdutta.async.stream.OutputStreamDataSink;
 import com.koushikdutta.ion.Loader.LoaderEmitter;
 import com.koushikdutta.ion.bitmap.BitmapInfo;
+import com.koushikdutta.ion.bitmap.LocallyCachedStatus;
 import com.koushikdutta.ion.builder.Builders;
 import com.koushikdutta.ion.builder.FutureBuilder;
 import com.koushikdutta.ion.builder.LoadBuilder;
+import com.koushikdutta.ion.future.ImageViewFuture;
 import com.koushikdutta.ion.future.ResponseFuture;
+import com.koushikdutta.ion.gson.GsonArrayParser;
 import com.koushikdutta.ion.gson.GsonBody;
-import com.koushikdutta.ion.gson.GsonParser;
+import com.koushikdutta.ion.gson.GsonObjectParser;
 import com.koushikdutta.ion.gson.GsonSerializer;
 import com.koushikdutta.ion.gson.PojoBody;
 
@@ -67,7 +70,6 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.ref.WeakReference;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -402,6 +404,15 @@ class IonRequestBuilder implements Builders.Any.B, Builders.Any.F, Builders.Any.
         RawHeaders headers;
         DataEmitter emitter;
 
+        public Response<T> getResponse(Exception e, T result) {
+            Response<T> response = new Response<T>();
+            response.headers = headers;
+            response.request = finalRequest;
+            response.result = result;
+            response.exception = e;
+            return response;
+        }
+
         @Override
         public Future<Response<T>> withResponse() {
             final SimpleFuture<Response<T>> ret = new SimpleFuture<Response<T>>();
@@ -409,12 +420,7 @@ class IonRequestBuilder implements Builders.Any.B, Builders.Any.F, Builders.Any.
                 @Override
                 public void onCompleted(Exception e, T result) {
                     if (emitter != null) {
-                        Response<T> response = new Response<T>();
-                        response.headers = headers;
-                        response.request = finalRequest;
-                        response.result = result;
-                        response.exception = e;
-                        ret.setComplete(response);
+                        ret.setComplete(getResponse(e, result));
                         return;
                     }
                     ret.setComplete(e, null);
@@ -476,7 +482,7 @@ class IonRequestBuilder implements Builders.Any.B, Builders.Any.F, Builders.Any.
             // hook up data progress callbacks
             final long total = emitter.length();
             DataTrackingEmitter tracker;
-            if (!(emitter instanceof DataTrackingEmitter)) {
+            if (!(this.emitter instanceof DataTrackingEmitter)) {
                 tracker = new FilteredDataEmitter();
                 tracker.setDataEmitter(this.emitter);
             }
@@ -576,7 +582,7 @@ class IonRequestBuilder implements Builders.Any.B, Builders.Any.F, Builders.Any.
             protected void cleanup() {
                 super.cleanup();
                 if (close)
-                    sink.close();
+                    sink.end();
             }
 
             EmitterTransform<T> self = this;
@@ -635,12 +641,12 @@ class IonRequestBuilder implements Builders.Any.B, Builders.Any.F, Builders.Any.
 
     @Override
     public ResponseFuture<JsonObject> asJsonObject() {
-        return execute(new GsonParser<JsonObject>());
+        return execute(new GsonObjectParser());
     }
 
     @Override
     public ResponseFuture<JsonArray> asJsonArray() {
-        return execute(new GsonParser<JsonArray>());
+        return execute(new GsonArrayParser());
     }
 
     @Override
@@ -768,7 +774,7 @@ class IonRequestBuilder implements Builders.Any.B, Builders.Any.F, Builders.Any.
     }
 
     @Override
-    public Builders.Any.M addMultipartParts(List<Part> parameters) {
+    public IonRequestBuilder addMultipartParts(Iterable<Part> parameters) {
         if (multipartBody == null) {
             multipartBody = new MultipartFormDataBody();
             setBody(multipartBody);
@@ -781,13 +787,36 @@ class IonRequestBuilder implements Builders.Any.B, Builders.Any.F, Builders.Any.
     }
 
     @Override
-    public IonBitmapRequestBuilder withBitmap() {
-        return new IonBitmapRequestBuilder(this);
+    public Builders.Any.M addMultipartParts(Part... parameters) {
+        if (multipartBody == null) {
+            multipartBody = new MultipartFormDataBody();
+            setBody(multipartBody);
+        }
+
+        for (Part part: parameters) {
+            multipartBody.addPart(part);
+        }
+        return this;
     }
 
     @Override
-    public Future<ImageView> intoImageView(ImageView imageView) {
-        return new IonBitmapRequestBuilder(this).intoImageView(imageView);
+    public IonRequestBuilder setMultipartContentType(String contentType) {
+        if (multipartBody == null) {
+            multipartBody = new MultipartFormDataBody();
+            setBody(multipartBody);
+        }
+        multipartBody.setContentType(contentType);
+        return this;
+    }
+
+    @Override
+    public IonImageViewRequestBuilder withBitmap() {
+        return new IonImageViewRequestBuilder(this);
+    }
+
+    @Override
+    public ImageViewFuture intoImageView(ImageView imageView) {
+        return new IonImageViewRequestBuilder(this).withImageView(imageView).intoImageView(imageView);
     }
 
     @Override
@@ -798,12 +827,17 @@ class IonRequestBuilder implements Builders.Any.B, Builders.Any.F, Builders.Any.
 
     @Override
     public BitmapInfo asCachedBitmap() {
-        return new IonBitmapRequestBuilder(this).asCachedBitmap();
+        return new IonImageViewRequestBuilder(this).asCachedBitmap();
+    }
+
+    @Override
+    public LocallyCachedStatus isLocallyCached() {
+        return new IonImageViewRequestBuilder(this).isLocallyCached();
     }
 
     @Override
     public Future<Bitmap> asBitmap() {
-        return new IonBitmapRequestBuilder(this).asBitmap();
+        return new IonImageViewRequestBuilder(this).asBitmap();
     }
 
     String logTag;
@@ -844,13 +878,13 @@ class IonRequestBuilder implements Builders.Any.B, Builders.Any.F, Builders.Any.
     }
 
     @Override
-    public IonRequestBuilder setJsonObjectBody(Object object, TypeToken token) {
+    public IonRequestBuilder setJsonPojoBody(Object object, TypeToken token) {
         setBody(new PojoBody(ion.configure().getGson(), object, token));
         return this;
     }
 
     @Override
-    public IonRequestBuilder setJsonObjectBody(Object object) {
+    public IonRequestBuilder setJsonPojoBody(Object object) {
         setBody(new PojoBody(ion.configure().getGson(), object, null));
         return this;
     }

@@ -10,6 +10,7 @@ import android.util.Log;
 import com.koushikdutta.async.ByteBufferList;
 import com.koushikdutta.async.future.FutureCallback;
 import com.koushikdutta.ion.bitmap.BitmapInfo;
+import com.koushikdutta.ion.bitmap.IonBitmapCache;
 import com.koushikdutta.ion.gif.GifAction;
 import com.koushikdutta.ion.gif.GifDecoder;
 
@@ -55,8 +56,6 @@ class LoadBitmap extends LoadBitmapEmitter implements FutureCallback<ByteBufferL
                     Bitmap[] bitmaps;
                     int[] delays;
                     BitmapFactory.Options options = ion.bitmapCache.prepareBitmapOptions(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining(), resizeWidth, resizeHeight);
-                    if (options == null)
-                        throw new Exception("BitmapFactory.Options failed to load");
                     final Point size = new Point(options.outWidth, options.outHeight);
                     if (animateGif && TextUtils.equals("image/gif", options.outMimeType)) {
                         GifDecoder decoder = new GifDecoder(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining(), new GifAction() {
@@ -78,7 +77,7 @@ class LoadBitmap extends LoadBitmapEmitter implements FutureCallback<ByteBufferL
                         }
                     }
                     else {
-                        Bitmap bitmap = ion.bitmapCache.loadBitmap(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining(), options);
+                        Bitmap bitmap = IonBitmapCache.loadBitmap(bb.array(), bb.arrayOffset() + bb.position(), bb.remaining(), options);
                         if (bitmap == null)
                             throw new Exception("failed to load bitmap");
                         bitmaps = new Bitmap[] { bitmap };

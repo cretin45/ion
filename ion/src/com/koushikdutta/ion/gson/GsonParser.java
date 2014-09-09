@@ -14,26 +14,34 @@ import com.koushikdutta.async.parser.AsyncParser;
 import com.koushikdutta.async.parser.ByteBufferListParser;
 import com.koushikdutta.async.parser.StringParser;
 import com.koushikdutta.async.stream.ByteBufferListInputStream;
+import com.koushikdutta.async.util.Charsets;
 
 import java.io.InputStreamReader;
+import java.nio.charset.Charset;
 
 /**
  * Created by koush on 5/27/13.
  */
-public class GsonParser<T extends JsonElement> implements AsyncParser<T> {
-    public GsonParser() {
+public abstract class GsonParser<T extends JsonElement> implements AsyncParser<T> {
+    Class<? extends JsonElement> clazz;
+    public GsonParser(Class<? extends T> clazz) {
+        this.clazz = clazz;
     }
+
     @Override
     public Future<T> parse(DataEmitter emitter) {
+        final String charset = emitter.charset() == null ? Charset.defaultCharset().name() : emitter.charset();
         return new ByteBufferListParser().parse(emitter)
         .then(new TransformFuture<T, ByteBufferList>() {
             @Override
             protected void transform(ByteBufferList result) throws Exception {
                 JsonParser parser = new JsonParser();
-                T parsed = (T)parser.parse(new JsonReader(new InputStreamReader(new ByteBufferListInputStream(result))));
+                JsonElement parsed = parser.parse(new JsonReader(new InputStreamReader(new ByteBufferListInputStream(result), charset)));
                 if (parsed.isJsonNull() || parsed.isJsonPrimitive())
                     throw new JsonParseException("unable to parse json");
-                setComplete(null, parsed);
+                if (!clazz.isInstance(parsed))
+                    throw new ClassCastException(parsed.getClass().getCanonicalName() + " can not be casted to " + clazz.getCanonicalName());
+                setComplete(null, (T)parsed);
             }
         });
     }

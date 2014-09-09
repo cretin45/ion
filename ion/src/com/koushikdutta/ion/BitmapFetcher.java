@@ -8,6 +8,7 @@ import com.koushikdutta.async.http.AsyncHttpRequest;
 import com.koushikdutta.async.parser.ByteBufferListParser;
 import com.koushikdutta.async.util.FileCache;
 import com.koushikdutta.ion.bitmap.BitmapInfo;
+import com.koushikdutta.ion.bitmap.PostProcess;
 import com.koushikdutta.ion.bitmap.Transform;
 import com.koushikdutta.ion.loader.MediaFile;
 
@@ -26,6 +27,7 @@ class BitmapFetcher implements IonRequestBuilder.LoadRequestCallback {
     int resizeHeight;
     boolean animateGif;
     boolean deepZoom;
+    ArrayList<PostProcess> postProcess;
     boolean noTransformCache;
 
     private boolean fastLoad(String uri) {
@@ -96,7 +98,7 @@ class BitmapFetcher implements IonRequestBuilder.LoadRequestCallback {
         // make sure that the parent download isn't cancelled (empty list)
         // and also make sure there are waiters for this transformed bitmap
         if (ion.bitmapsPending.tag(bitmapKey) == null) {
-            ion.bitmapsPending.add(downloadKey, new TransformBitmap(ion, bitmapKey, downloadKey, transforms, noTransformCache));
+            ion.bitmapsPending.add(downloadKey, new TransformBitmap(ion, bitmapKey, downloadKey, transforms, postProcess, noTransformCache));
         }
     }
 
@@ -113,7 +115,7 @@ class BitmapFetcher implements IonRequestBuilder.LoadRequestCallback {
         // See TransformBitmap for where the cache is populated.
         FileCache fileCache = ion.responseCache.getFileCache();
         if (!builder.noCache && !noTransformCache && hasTransforms && fileCache.exists(bitmapKey) && !deepZoom) {
-            TransformBitmap.getBitmapSnapshot(ion, bitmapKey);
+            TransformBitmap.getBitmapSnapshot(ion, bitmapKey, postProcess);
             return;
         }
 

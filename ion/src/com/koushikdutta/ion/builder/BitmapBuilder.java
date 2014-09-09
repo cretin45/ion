@@ -1,5 +1,6 @@
 package com.koushikdutta.ion.builder;
 
+import com.koushikdutta.ion.bitmap.PostProcess;
 import com.koushikdutta.ion.bitmap.Transform;
 
 /**
@@ -20,6 +21,22 @@ public interface BitmapBuilder<B extends BitmapBuilder<?>> {
      * @return
      */
     public B resize(int width, int height);
+
+    /**
+     * Resize the bitmap to the given width dimension, maintaining
+     * the aspect ratio of the height.
+     * @param width
+     * @return
+     */
+    public B resizeWidth(int width);
+
+    /**
+     * Resize the bitmap to the given height dimension, maintaining
+     * the aspect ratio of the width.
+     * @param height
+     * @return
+     */
+    public B resizeHeight(int height);
 
     /**
      * Center the image inside of the bounds specified by the ImageView or resize
@@ -43,6 +60,13 @@ public interface BitmapBuilder<B extends BitmapBuilder<?>> {
      * @return
      */
     public B smartSize(boolean smartSize);
+
+    /**
+     * Process the bitmap on a background thread.
+     * @param postProcess
+     * @return
+     */
+    public B postProcess(PostProcess postProcess);
 
     /**
      * Disable usage of the transform cache for this request

@@ -6,44 +6,64 @@ buildscript {
     repositories {
         mavenCentral()
     }
-
     dependencies {
-      classpath 'com.android.tools.build:gradle:0.10.+'
+        classpath 'com.android.tools.build:gradle:+'
     }
 }
-
-apply plugin: 'android-library'
+apply plugin: 'com.android.library'
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    compile project(':AndroidAsync')
-    compile 'com.google.code.gson:gson:2.2.4'
+    compile 'com.android.support:support-v4:20.+'
+    compile project(':AndroidAsync:AndroidAsync')
+    compile 'com.google.code.gson:gson:2.3'
 }
 
 android {
-  sourceSets {
-      main {
-          manifest.srcFile 'AndroidManifest.xml'
-      
-          java {
-              srcDir 'src/'
-          }
-      }
-  }
+    sourceSets {
+        main {
+            manifest.srcFile 'AndroidManifest.xml'
+
+            java {
+                srcDir 'src/'
+            }
+        }
+        androidTest.java.srcDirs=['test/src/']
+        androidTest.res.srcDirs=['test/res/']
+        androidTest.assets.srcDirs=['test/assets/']
+    }
+
+    android {
+        lintOptions {
+            abortOnError false
+        }
+    }
 
     compileSdkVersion 19
-    buildToolsVersion "19.0.3"
+    buildToolsVersion '20.0.0'
 
-    defaultConfig {
-        minSdkVersion 7
-        targetSdkVersion 19
-    }
+    publishNonDefault true
 }
 
 // upload to maven task
 if (System.getenv().I_AM_KOUSH == 'true') {
-  apply from: 'https://raw.github.com/koush/mvn-repo/master/maven.gradle'
+    apply from: 'https://raw.githubusercontent.com/koush/mvn-repo/master/maven.gradle'
+
+    apply plugin: 'maven'
+    apply plugin: 'signing'
+
+    afterEvaluate { project ->
+        uploadArchives {
+            repositories {
+                mavenDeployer {
+                    pom*.whenConfigured { pom ->
+                        pom.dependencies.removeAll { dep -> dep.artifactId == 'support-v4' }
+                    }
+                }
+            }
+        }
+    }
 }

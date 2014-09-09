@@ -6,6 +6,8 @@ import android.graphics.Point;
 import com.koushikdutta.async.future.FutureCallback;
 import com.koushikdutta.async.util.FileCache;
 import com.koushikdutta.ion.bitmap.BitmapInfo;
+import com.koushikdutta.ion.bitmap.IonBitmapCache;
+import com.koushikdutta.ion.bitmap.PostProcess;
 import com.koushikdutta.ion.bitmap.Transform;
 
 import java.io.File;
@@ -13,9 +15,27 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 
 class TransformBitmap extends BitmapCallback implements FutureCallback<BitmapInfo> {
-    ArrayList<Transform> transforms;
+    static class PostProcessNullTransform implements Transform {
+        String key;
+        public PostProcessNullTransform(String key) {
+            this.key = key;
+        }
 
-    public static void getBitmapSnapshot(final Ion ion, final String transformKey) {
+        @Override
+        public Bitmap transform(Bitmap b) {
+            return b;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+    }
+
+    ArrayList<Transform> transforms;
+    ArrayList<PostProcess> postProcess;
+
+    public static void getBitmapSnapshot(final Ion ion, final String transformKey, final ArrayList<PostProcess> postProcess) {
         // don't do this if this is already loading
         if (ion.bitmapsPending.tag(transformKey) != null)
             return;
@@ -30,12 +50,19 @@ class TransformBitmap extends BitmapCallback implements FutureCallback<BitmapInf
 
                 try {
                     File file = ion.responseCache.getFileCache().getFile(transformKey);
-                    Bitmap bitmap = ion.getBitmapCache().loadBitmap(file, null);
+                    Bitmap bitmap = IonBitmapCache.loadBitmap(file, null);
                     if (bitmap == null)
                         throw new Exception("Bitmap failed to load");
                     Point size = new Point(bitmap.getWidth(), bitmap.getHeight());
                     BitmapInfo info = new BitmapInfo(transformKey, "image/jpeg", new Bitmap[] { bitmap }, size);
                     info.loadedFrom =  Loader.LoaderEmitter.LOADED_FROM_CACHE;
+
+                    if (postProcess != null) {
+                        for (PostProcess p: postProcess) {
+                            p.postProcess(info);
+                        }
+                    }
+
                     callback.report(null, info);
                 }
                 catch (OutOfMemoryError e) {
@@ -54,10 +81,11 @@ class TransformBitmap extends BitmapCallback implements FutureCallback<BitmapInf
 
     String downloadKey;
     boolean noTransformCache;
-    public TransformBitmap(Ion ion, String transformKey, String downloadKey, ArrayList<Transform> transforms, boolean noTransformCache) {
+    public TransformBitmap(Ion ion, String transformKey, String downloadKey, ArrayList<Transform> transforms, ArrayList<PostProcess> postProcess, boolean noTransformCache) {
         super(ion, transformKey, true);
         this.transforms = transforms;
         this.downloadKey = downloadKey;
+        this.postProcess = postProcess;
         this.noTransformCache = noTransformCache;
     }
 
@@ -99,6 +127,13 @@ class TransformBitmap extends BitmapCallback implements FutureCallback<BitmapInf
                     info = new BitmapInfo(key, result.mimeType, bitmaps, size);
                     info.delays = result.delays;
                     info.loadedFrom = result.loadedFrom;
+
+                    if (postProcess != null) {
+                        for (PostProcess p: postProcess) {
+                            p.postProcess(info);
+                        }
+                    }
+
                     report(null, info);
                 }
                 catch (OutOfMemoryError e) {

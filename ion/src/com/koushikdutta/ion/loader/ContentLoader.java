@@ -1,14 +1,14 @@
 package com.koushikdutta.ion.loader;
 
+import android.content.Context;
 import android.net.Uri;
+
 import com.koushikdutta.async.DataEmitter;
 import com.koushikdutta.async.future.Future;
 import com.koushikdutta.async.future.FutureCallback;
-import com.koushikdutta.async.future.SimpleFuture;
 import com.koushikdutta.async.http.AsyncHttpRequest;
 import com.koushikdutta.async.stream.InputStreamDataEmitter;
 import com.koushikdutta.ion.Ion;
-import com.koushikdutta.ion.Loader;
 import com.koushikdutta.ion.bitmap.BitmapInfo;
 
 import java.io.InputStream;
@@ -16,8 +16,18 @@ import java.io.InputStream;
 /**
  * Created by koush on 5/22/13.
  */
-public class ContentLoader extends SimpleLoader {
-    private static final class InputStreamDataEmitterFuture extends SimpleFuture<DataEmitter> {
+public class ContentLoader extends StreamLoader {
+    @Override
+    public Future<BitmapInfo> loadBitmap(final Context context, final Ion ion, final String key, final String uri, final int resizeWidth, final int resizeHeight, final boolean animateGif) {
+        if (!uri.startsWith("content:/"))
+            return null;
+
+        return super.loadBitmap(context, ion, key, uri, resizeWidth, resizeHeight, animateGif);
+    }
+
+    @Override
+    protected InputStream getInputStream(Context context, String uri) throws Exception {
+        return context.getContentResolver().openInputStream(Uri.parse(uri));
     }
 
     @Override
