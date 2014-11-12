@@ -71,14 +71,18 @@ public class MediaFile {
     public static final int FILE_TYPE_MP2TS   = 28;
     public static final int FILE_TYPE_AVI     = 29;
     public static final int FILE_TYPE_WEBM    = 30;
-    public static final int FILE_TYPE_DIVX    = 31;
     private static final int FIRST_VIDEO_FILE_TYPE = FILE_TYPE_MP4;
-    private static final int LAST_VIDEO_FILE_TYPE = FILE_TYPE_DIVX;
+    private static final int LAST_VIDEO_FILE_TYPE = FILE_TYPE_WEBM;
 
     // More video file types
     public static final int FILE_TYPE_MP2PS   = 200;
+    public static final int FILE_TYPE_DIVX    = 201;
+    public static final int FILE_TYPE_FLV     = 202;
+    public static final int FILE_TYPE_RV      = 203;
+    public static final int FILE_TYPE_VC1     = 204;
+
     private static final int FIRST_VIDEO_FILE_TYPE2 = FILE_TYPE_MP2PS;
-    private static final int LAST_VIDEO_FILE_TYPE2 = FILE_TYPE_MP2PS;
+    private static final int LAST_VIDEO_FILE_TYPE2 = FILE_TYPE_VC1;
 
     // Image file types
     public static final int FILE_TYPE_JPEG    = 32;
@@ -95,9 +99,10 @@ public class MediaFile {
     public static final int FILE_TYPE_PLS      = 42;
     public static final int FILE_TYPE_WPL      = 43;
     public static final int FILE_TYPE_HTTPLIVE = 44;
+    public static final int FILE_TYPE_DASH     = 45;
 
     private static final int FIRST_PLAYLIST_FILE_TYPE = FILE_TYPE_M3U;
-    private static final int LAST_PLAYLIST_FILE_TYPE = FILE_TYPE_HTTPLIVE;
+    private static final int LAST_PLAYLIST_FILE_TYPE = FILE_TYPE_DASH;
 
     // Drm file types
     public static final int FILE_TYPE_FL      = 51;
@@ -187,7 +192,6 @@ public class MediaFile {
         addFileType("WAV", FILE_TYPE_PCM, "audio/wav");
         addFileType("AMR", FILE_TYPE_AMR, "audio/amr");
         addFileType("AWB", FILE_TYPE_AWB, "audio/amr-wb");
-        addFileType("DIVX", FILE_TYPE_DIVX, "video/divx");
         /*
         if (isWMAEnabled()) {
             addFileType("WMA", FILE_TYPE_WMA, "audio/x-ms-wma", MtpConstants.FORMAT_WMA);
@@ -218,7 +222,7 @@ public class MediaFile {
         addFileType("MPG", FILE_TYPE_MP4, "video/mpeg", MtpConstants.FORMAT_MPEG);
         addFileType("MP4", FILE_TYPE_MP4, "video/mp4", MtpConstants.FORMAT_MPEG);
         addFileType("MPEG4", FILE_TYPE_MP4, "video/mpeg4", MtpConstants.FORMAT_MPEG);
-        addFileType("M4V", FILE_TYPE_M4V, "video/m4v", MtpConstants.FORMAT_MPEG);
+        addFileType("M4V", FILE_TYPE_M4V, "video/mp4", MtpConstants.FORMAT_MPEG);
         addFileType("MOV", FILE_TYPE_MP4, "video/quicktime", MtpConstants.FORMAT_MPEG);
         addFileType("3GP", FILE_TYPE_3GPP, "video/3gpp",  MtpConstants.FORMAT_3GP_CONTAINER);
         addFileType("3GPP", FILE_TYPE_3GPP, "video/3gpp", MtpConstants.FORMAT_3GP_CONTAINER);
@@ -228,8 +232,12 @@ public class MediaFile {
         addFileType("WEBM", FILE_TYPE_WEBM, "video/webm");
         addFileType("TS", FILE_TYPE_MP2TS, "video/mp2ts");
         addFileType("MPG", FILE_TYPE_MP2TS, "video/mp2ts");
-
         addFileType("AVI", FILE_TYPE_AVI, "video/avi");
+        addFileType("DIVX", FILE_TYPE_DIVX, "video/divx");
+        addFileType("FLV", FILE_TYPE_FLV, "video/x-flv");
+        addFileType("RM", FILE_TYPE_RV, "video/vnd.rn-realvideo");
+        addFileType("RMVB", FILE_TYPE_RV, "video/vnd.rn-realvideo");
+        addFileType("VC1", FILE_TYPE_VC1, "video/vc1");
 
         /*
         if (isWMVEnabled()) {
@@ -253,6 +261,7 @@ public class MediaFile {
         addFileType("M3U8", FILE_TYPE_HTTPLIVE, "application/vnd.apple.mpegurl");
         addFileType("M3U8", FILE_TYPE_HTTPLIVE, "audio/mpegurl");
         addFileType("M3U8", FILE_TYPE_HTTPLIVE, "audio/x-mpegurl");
+        addFileType("MPD", FILE_TYPE_DASH, "application/dash+xml");
 
         addFileType("FL", FILE_TYPE_FL, "application/x-android-drm-fl");
 
@@ -267,6 +276,8 @@ public class MediaFile {
         addFileType("ZIP", FILE_TYPE_ZIP, "application/zip");
         addFileType("MPG", FILE_TYPE_MP2PS, "video/mp2p");
         addFileType("MPEG", FILE_TYPE_MP2PS, "video/mp2p");
+        addFileType("DIVX", FILE_TYPE_DIVX, "video/divx");
+        addFileType("AC3", FILE_TYPE_AC3, "audio/ac3");
         addFileType("EC3", FILE_TYPE_EC3, "audio/eac3");
     }
 
@@ -274,15 +285,15 @@ public class MediaFile {
         return ((fileType >= FIRST_AUDIO_FILE_TYPE &&
                 fileType <= LAST_AUDIO_FILE_TYPE) ||
                 (fileType >= FIRST_MIDI_FILE_TYPE &&
-                fileType <= LAST_MIDI_FILE_TYPE) ||
+                        fileType <= LAST_MIDI_FILE_TYPE) ||
                 (fileType >= FIRST_AUDIO_FILE_TYPE2 &&
-                fileType <= LAST_AUDIO_FILE_TYPE2));
+                        fileType <= LAST_AUDIO_FILE_TYPE2));
     }
 
     public static boolean isVideoFileType(int fileType) {
         return (fileType >= FIRST_VIDEO_FILE_TYPE &&
                 fileType <= LAST_VIDEO_FILE_TYPE)
-            || (fileType >= FIRST_VIDEO_FILE_TYPE2 &&
+                || (fileType >= FIRST_VIDEO_FILE_TYPE2 &&
                 fileType <= LAST_VIDEO_FILE_TYPE2);
     }
 
