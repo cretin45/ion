@@ -27,7 +27,7 @@ public class BitmapInfo {
     final public Bitmap[] bitmaps;
     public int[] delays;
     public Exception exception;
-    public BitmapRegionDecoder decoder;
+    public BitmapRegionLoader decoder;
     public File decoderFile;
     public final String mimeType;
     public final UntypedHashtable extras = new UntypedHashtable();
