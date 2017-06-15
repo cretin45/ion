@@ -4,7 +4,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.2.3'
+        classpath 'com.android.tools.build:gradle:2.3.1'
     }
 }
 
@@ -19,8 +19,11 @@ dependencies {
     compile 'com.android.support:support-v4:+'
     compile project(':AndroidAsync')
     compile 'com.google.code.gson:gson:2.3'
+
+    provided 'com.google.android.gms:play-services-base:+'
     // for when i wanna test this against gms conscrypt
     androidTestCompile 'com.google.android.gms:play-services-base:+'
+
     // mockito nom nom oh god im drunk
     androidTestCompile 'org.mockito:mockito-core:1.+'
     androidTestCompile 'com.google.dexmaker:dexmaker:1.2'
@@ -45,7 +48,7 @@ android {
     }
     defaultConfig {
         targetSdkVersion 23
-        minSdkVersion 10
+        minSdkVersion 14
     }
 
     compileSdkVersion project.hasProperty('global_compileSdkVersion') ? global_compileSdkVersion : 25
